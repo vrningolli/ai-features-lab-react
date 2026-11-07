@@ -11,6 +11,9 @@ interface Props {
 
 export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
   const [query, setQuery] = useState("");
+  /** Phones only: the lesson list folds away so the lesson itself comes first. */
+  const [open, setOpen] = useState(false);
+  const active = CURRICULUM.find((m) => m.id === activeId);
   const groups = useMemo(() => groupedModules(), []);
 
   // Search across title/tagline/level so the nav scales as lessons grow.
@@ -37,7 +40,10 @@ export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
           (progress[m.id] ? " done" : "") +
           (locked ? " locked" : "")
         }
-        onClick={() => onSelect(m.id)}
+        onClick={() => {
+          onSelect(m.id);
+          setOpen(false);
+        }}
         disabled={locked}
         title={locked ? "Complete the previous lesson to unlock this one" : undefined}
       >
@@ -54,7 +60,14 @@ export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
   };
 
   return (
-    <nav className="sidebar" aria-label="Lessons">
+    <nav className={"sidebar" + (open ? " open" : "")} aria-label="Lessons">
+      <button className="nav-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>
+          {active ? `${active.icon} ${active.title}` : "Lessons"}
+        </span>
+        <span className="nav-toggle-hint">All lessons {open ? "▴" : "▾"}</span>
+      </button>
+      <div className="nav-body">
       <input
         className="nav-search"
         type="search"
@@ -77,6 +90,7 @@ export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
           </div>
         ))
       )}
+      </div>
     </nav>
   );
 }

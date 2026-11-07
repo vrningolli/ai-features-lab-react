@@ -7,14 +7,14 @@ import { Studio } from "./components/Studio";
 import { WorldMap } from "./components/WorldMap";
 import { BadgeToasts } from "./components/BadgeToast";
 import { AgentPanel } from "./components/AgentPanel";
+import { SiteNav } from "./components/SiteNav";
 import { labPrompt } from "./lib/prompts";
 import { unlockedIds } from "./data/gamification";
 
 type View = "world" | "lessons" | "studio" | "agent";
 type Theme = "dark" | "light";
 
-const THEME_KEY = "ai-features-lab.theme";
-/** True when this build is served inside the DS Coach site at /ai-lab/. */
+/** True when this build is served inside the Prep Hub site at /ai-lab/. */
 const EMBEDDED_IN_COACH = /\/ai-lab\/?$/.test(location.pathname.replace(/index\.html$/, ""));
 
 function indexFromHash(): number {
@@ -31,9 +31,8 @@ export default function App() {
     if (!location.hash || location.hash === "#world") return "world"; // land on the journey map
     return "lessons";
   });
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(THEME_KEY) as Theme) || "dark"
-  );
+  /** The lab is white-themed only (the journey map shows its day scene). */
+  const theme: Theme = "light";
   /** A lab handed from a lesson to the agent runner, consumed on arrival. */
   const [handoff, setHandoff] = useState<{ prompt: string; lesson: string } | null>(null);
   const {
@@ -62,7 +61,6 @@ export default function App() {
   // Apply + persist theme.
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
   // Keep the URL hash in sync so map/lessons/studio are deep-linkable.
@@ -141,16 +139,12 @@ export default function App() {
 
   return (
     <>
+      {/* Only when deployed inside Prep Hub at /ai-lab/ — standalone there is no site to navigate. */}
+      {EMBEDDED_IN_COACH && <SiteNav />}
       <header className="topbar">
         <div className="brand">
           <span className="logo">◆</span>
           <div>
-            {/* Only when deployed inside DS Coach at /ai-lab/ — standalone there's nothing to go back to. */}
-            {EMBEDDED_IN_COACH && (
-              <a className="back-home" href="../">
-                ← DS Coach
-              </a>
-            )}
             <h1>AI Features Lab</h1>
             <p className="sub">
               Hands-on Claude Code academy — Skills · Agents · Hooks · MCP · Instructions · Plugins
@@ -201,13 +195,6 @@ export default function App() {
             </div>
           )}
 
-          <button
-            className="theme-toggle"
-            title="Toggle light / dark theme"
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
         </div>
       </header>
 
