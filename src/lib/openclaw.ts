@@ -132,17 +132,28 @@ export async function chatStream(
   }
   if (!res.ok) throw await failFor(res);
   if (!res.body) throw new OpenClawError("Gateway returned an empty response body.");
+  return readSseText(res.body, onDelta);
+}
 
-  const reader = res.body.getReader();
+/**
+ * Reads a server-sent-event text stream ("data: {json}\n\n", ending with
+ * "data: [DONE]") and calls `onDelta` with each text chunk. Understands both
+ * the OpenAI chunk shape (OpenClaw) and Cloudflare Workers AI's
+ * `{ "response": "..." }` shape (the free hosted model).
+ */
+export async function readSseText(
+  body: ReadableStream<Uint8Array>,
+  onDelta: (text: string) => void
+): Promise<string> {
+  const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let full = "";
 
-  // Server-sent events: "data: {json}\n\n", terminated by "data: [DONE]".
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
 
     const frames = buffer.split("\n\n");
     buffer = frames.pop() ?? "";
@@ -154,10 +165,14 @@ export async function chatStream(
         if (!payload || payload === "[DONE]") continue;
         try {
           const chunk = JSON.parse(payload) as {
+            response?: string;
             choices?: { delta?: { content?: string }; message?: { content?: string } }[];
           };
           const text =
-            chunk.choices?.[0]?.delta?.content ?? chunk.choices?.[0]?.message?.content ?? "";
+            chunk.choices?.[0]?.delta?.content ??
+            chunk.choices?.[0]?.message?.content ??
+            chunk.response ??
+            "";
           if (text) {
             full += text;
             onDelta(text);

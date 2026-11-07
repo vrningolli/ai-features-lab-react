@@ -274,7 +274,7 @@ export default function App() {
               {doneCount}/{CURRICULUM.length} lessons complete · ←/→ to navigate · <kbd>/</kbd> to search
             </>
           ) : view === "agent" ? (
-            <>Runs against your own local OpenClaw gateway — nothing is sent anywhere else.</>
+            <>Free model, your own Claude key, or your local OpenClaw — keys stay in this browser.</>
           ) : (
             <>Generated files are templates — review before committing.</>
           )}

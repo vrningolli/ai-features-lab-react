@@ -18,7 +18,7 @@ interface Props {
   /** The next lesson is still sealed — mark this one complete to open it. */
   nextLocked?: boolean;
   onMap?: () => void;
-  /** Hands this lesson's lab to the OpenClaw agent runner. */
+  /** Hands this lesson's lab to the agent runner. */
   onRunLab?: () => void;
 }
 
@@ -139,7 +139,7 @@ export function Lesson({
           </ol>
           {onRunLab && (
             <button className="btn agent-run-btn" onClick={onRunLab}>
-              🤖 Run this lab with OpenClaw
+              🤖 Run this lab with the AI agent
             </button>
           )}
         </div>

@@ -688,3 +688,12 @@ pre code { font-family: var(--mono); font-size: 12.8px; color: #d6dee8; line-hei
   .view-tab { flex: 1; padding: 8px 4px; font-size: 12px; white-space: nowrap; }
   .progress-wrap { display: none; }
 }
+
+/* Agent provider picker */
+.agent-providers { align-self: flex-start; flex-wrap: wrap; }
+.agent-setup label.agent-check { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; }
+.agent-setup label.agent-check input { width: auto; }
+@media (max-width: 720px) {
+  .agent-providers { align-self: stretch; }
+  .agent-providers .view-tab { flex: 1; }
+}
