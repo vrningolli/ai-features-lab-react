@@ -1,0 +1,895 @@
+[
+  {
+    "id": "overview",
+    "icon": "🗺️",
+    "title": "The Big Picture",
+    "tagline": "How Claude Code's extensibility layers fit together — and which to reach for.",
+    "level": "Start here",
+    "mins": 6,
+    "group": "Foundations",
+    "whatItIs": "<p>Claude Code is not just a chat box — it's an <b>agentic harness</b> you can extend at six layers. Each layer answers a different question:</p>",
+    "mentalModel": "Think of Claude as a new senior engineer. <b>Instructions</b> are their onboarding doc, <b>Skills</b> are playbooks they pull off the shelf, <b>Subagents</b> are teammates they delegate to, <b>Hooks</b> are the CI/policy gates they can't bypass, <b>MCP</b> is their access to your internal systems, and <b>Plugins</b> are how you ship all of that to the whole company at once.",
+    "whenToUse": [
+      "<b>Instructions (CLAUDE.md)</b> → \"Always know this about my project.\" Persistent context & rules.",
+      "<b>Skills</b> → \"When this kind of task comes up, follow this procedure.\" Reusable, model-invoked know-how.",
+      "<b>Subagents</b> → \"Delegate this to a focused specialist with its own context window.\"",
+      "<b>Hooks</b> → \"This must happen automatically / this must never happen.\" Deterministic, not the model's choice.",
+      "<b>MCP</b> → \"Give Claude a new sense or limb\" — access to a DB, API, ticketing system, or internal service.",
+      "<b>Plugins</b> → \"Package all of the above and distribute it across the org.\""
+    ],
+    "anatomy": {
+      "location": "Project-level config lives in <code>.claude/</code> at your repo root; personal config in <code>~/.claude/</code>. Settings & hooks in <code>settings.json</code>; MCP in <code>.mcp.json</code>.",
+      "format": "Markdown + frontmatter for content; JSON for config."
+    },
+    "steps": [
+      "<b>Read the map.</b> Each following lesson is one layer, in the order you should learn them.",
+      "<b>Do the lab in each.</b> The lessons are practical — you'll actually create a file or config each time.",
+      "<b>Copy from <code>examples/</code>.</b> Every lesson has a matching real file in <code>ai-features-lab/examples/</code> you can drop into a project.",
+      "<b>Finish with the Capstone</b> — you'll assemble one feature of each layer into an enterprise 'golden setup'."
+    ],
+    "code": {
+      "file": "Mental model — one repo, all six layers",
+      "lang": "text",
+      "body": "your-enterprise-repo/\n├── CLAUDE.md                      # 1. Instructions  (always-on project memory)\n├── .mcp.json                      # 5. MCP servers   (DB, Jira, internal APIs)\n├── .claude/\n│   ├── settings.json              # 4. Hooks         (policy gates, auto-format)\n│   ├── skills/\n│   │   └── pr-summary/SKILL.md    # 2. Skills        (reusable procedures)\n│   ├── agents/\n│   │   └── security-auditor.md    # 3. Subagents     (focused specialists)\n│   └── commands/\n│       └── release-notes.md       #    Slash commands (typed shortcuts)\n└── (plugins distribute all of the above to every developer) # 6. Plugins"
+    },
+    "enterprise": [
+      "Standardize how 200 engineers use AI: ship one plugin, everyone gets the same guardrails.",
+      "Encode compliance as hooks so risky commands are blocked deterministically, not 'usually'.",
+      "Connect Claude to your internal systems (Jira, Snowflake, Confluence) via MCP — without leaking credentials into prompts."
+    ],
+    "lab": {
+      "goal": "Get oriented in a real repo before you build anything.",
+      "steps": [
+        "Open a terminal in any project and run <code>ls -a</code>. Look for a <code>.claude/</code> folder or <code>CLAUDE.md</code>.",
+        "In Claude Code, type <code>/help</code> and then <code>/agents</code>, <code>/mcp</code>, and <code>/plugin</code> to see what's already configured.",
+        "Predict which of the six layers would best solve a pain point you have today. Keep it in mind — you'll build it by the end."
+      ]
+    },
+    "pitfalls": [
+      "Don't cram everything into CLAUDE.md — it's always in context and costs tokens on every turn.",
+      "Don't reach for a hook when a skill will do, or a skill when a one-line instruction will do. Use the lightest layer that works."
+    ],
+    "quiz": {
+      "q": "You want a destructive shell command (like a prod DB drop) to be impossible for Claude to run — not just discouraged. Which layer?",
+      "options": [
+        "A line in CLAUDE.md",
+        "A Hook (PreToolUse)",
+        "A Skill",
+        "An MCP server"
+      ],
+      "answer": 1,
+      "explain": "Instructions are guidance the model *usually* follows. A PreToolUse hook is run by the harness and can BLOCK the tool call with exit code 2 — that's deterministic enforcement, which is what 'impossible, not discouraged' requires."
+    }
+  },
+  {
+    "id": "instructions",
+    "icon": "📜",
+    "title": "Instructions & Memory",
+    "tagline": "CLAUDE.md — the always-on briefing that shapes every response.",
+    "level": "Beginner",
+    "mins": 10,
+    "group": "The Six Layers",
+    "whatItIs": "<p><b>Instructions</b> are persistent context Claude Code loads automatically at the start of a session. The primary mechanism is the <code>CLAUDE.md</code> memory file. It's where project conventions, commands, architecture notes, and 'golden rules' live so you never have to re-explain them.</p>",
+    "mentalModel": "CLAUDE.md is the onboarding wiki you hand a new hire on day one — except the model re-reads it every single time it works.",
+    "whenToUse": [
+      "Project-wide facts: stack, build/test commands, folder map, conventions.",
+      "Non-negotiable rules: 'never commit to main', 'all code needs tests'.",
+      "Gotchas a newcomer would trip over: frozen folders, one-way migrations.",
+      "NOT for one-off task details (just say those in chat) or huge reference docs (link or import them instead)."
+    ],
+    "anatomy": {
+      "location": "<code>./CLAUDE.md</code> (project, committed & shared) · <code>~/.claude/CLAUDE.md</code> (personal, all projects) · <code>./CLAUDE.local.md</code> (personal, this project, gitignored) · nested <code>CLAUDE.md</code> in subfolders (loaded when work touches them).",
+      "format": "Plain Markdown. Use <code>@path/to/file</code> to import another file's contents. Keep it tight — it's in context on every turn."
+    },
+    "steps": [
+      "<b>Create the file.</b> At your repo root, run <code>claude</code> then type <code>/init</code> — Claude scans the repo and drafts a CLAUDE.md for you. Or create it by hand.",
+      "<b>Lead with the golden rules.</b> The things that must never be violated go near the top.",
+      "<b>List the commands.</b> Install / test / lint / run — so Claude verifies its own work the way you do.",
+      "<b>Add a codebase map.</b> A few lines on where things live saves dozens of search turns.",
+      "<b>Add a quick memory on the fly.</b> In a session, start a line with <code>#</code> and Claude offers to save it to memory.",
+      "<b>Keep it lean.</b> Re-read it monthly; delete anything stale. Every line costs tokens on every request."
+    ],
+    "code": {
+      "file": "CLAUDE.md  (project root)",
+      "lang": "markdown",
+      "body": "# CLAUDE.md — project memory & instructions\n\n## Golden rules\n- Never commit directly to `main`. Branch, then open a PR.\n- All new code needs tests; run `npm test` before calling a change done.\n- Secrets live in `.env` (gitignored) — never hardcode them.\n\n## Commands\n- Install: `npm ci`\n- Test:    `npm test`   (single: `npm test -- path/to/test`)\n- Lint:    `npm run lint`\n\n## Codebase map\n- `src/api/`    HTTP handlers\n- `src/domain/` business logic (no I/O)\n- `src/db/`     data access\n\n## Things that will bite you\n- `legacy/` is frozen — do not modify.\n- Migrations are one-way; never edit a committed one, add a new one.\n\n<!-- Import shared standards instead of pasting them: -->\n@docs/engineering-standards.md"
+    },
+    "enterprise": [
+      "A root CLAUDE.md committed to the repo gives every engineer (and every AI session) the same source of truth — onboarding drops from days to minutes.",
+      "Nested CLAUDE.md files let a monorepo give service-specific rules only when work touches that service.",
+      "Personal <code>~/.claude/CLAUDE.md</code> carries your cross-project preferences (commit style, language) without polluting team repos."
+    ],
+    "lab": {
+      "goal": "Give a real project a memory.",
+      "steps": [
+        "Open Claude Code in a project and run <code>/init</code> (or copy <code>examples/instructions/CLAUDE.md</code> and edit it).",
+        "Add three golden rules that are actually true for your project.",
+        "Start a new line in chat with <code>#</code> and type a fact like 'we deploy on Fridays' — accept the save and watch it land in CLAUDE.md.",
+        "Ask Claude 'how do I run the tests here?' — it should answer from your file without searching."
+      ]
+    },
+    "pitfalls": [
+      "Bloat: a 600-line CLAUDE.md silently taxes every request. Be ruthless.",
+      "Stale rules are worse than none — they actively mislead. Treat it like code: review it.",
+      "Don't put secrets in CLAUDE.md; it's committed and goes into context."
+    ],
+    "quiz": {
+      "q": "Where do you put a rule that should apply to YOU across every repo, but not be forced on teammates?",
+      "options": [
+        "The project's ./CLAUDE.md",
+        "~/.claude/CLAUDE.md (user-level)",
+        "A PreToolUse hook",
+        "An MCP server"
+      ],
+      "answer": 1,
+      "explain": "User-level memory at ~/.claude/CLAUDE.md applies to all your projects and isn't committed, so it stays personal. The project CLAUDE.md is shared with the team via git."
+    }
+  },
+  {
+    "id": "skills",
+    "icon": "🧩",
+    "title": "Skills",
+    "tagline": "Reusable procedures Claude pulls off the shelf when the task fits.",
+    "level": "Beginner → Intermediate",
+    "mins": 14,
+    "group": "The Six Layers",
+    "whatItIs": "<p>A <b>Skill</b> is a folder containing a <code>SKILL.md</code> file: a named, described procedure Claude loads <i>on demand</i> when a task matches its description. Skills can also bundle scripts and reference files. The magic is <b>progressive disclosure</b> — only the short description sits in context until the skill is actually needed, then the full instructions load.</p>",
+    "mentalModel": "A skill is a playbook in a binder. Claude reads the spine labels (the descriptions) cheaply, and only opens the binder it needs for the task at hand.",
+    "whenToUse": [
+      "A repeatable task with a 'right way' to do it: writing PR descriptions, generating migrations, formatting an incident report.",
+      "Procedures that bundle helper scripts or templates the model should use.",
+      "Knowledge too big or too situational for always-on CLAUDE.md.",
+      "NOT for a single fact (use instructions) or for spawning a separate context (use a subagent)."
+    ],
+    "anatomy": {
+      "location": "<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> (project) or <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code> (personal). Plugins can ship skills too.",
+      "format": "Markdown with YAML frontmatter requiring <code>name</code> and <code>description</code>. The folder may also contain scripts, templates, and resource files the skill references."
+    },
+    "steps": [
+      "<b>Make the folder:</b> <code>.claude/skills/pr-summary/</code>.",
+      "<b>Write SKILL.md frontmatter.</b> <code>name</code> (kebab-case) and a <code>description</code> that says <i>what it does AND when to use it</i> — this is what Claude matches against, so be specific.",
+      "<b>Write the body</b> as clear, numbered instructions. Include an output template and guardrails.",
+      "<b>(Optional) Add resources</b> in the same folder — a <code>template.md</code>, a <code>validate.py</code> — and reference them by relative path from SKILL.md.",
+      "<b>Invoke it.</b> Claude triggers it automatically when a task matches, or you can type <code>/pr-summary</code> to run it explicitly.",
+      "<b>Iterate the description.</b> If it triggers too often or not enough, tune the <code>description</code> first — that's the dial."
+    ],
+    "code": {
+      "file": ".claude/skills/pr-summary/SKILL.md",
+      "lang": "markdown",
+      "body": "---\nname: pr-summary\ndescription: Generate a structured PR description from the current git diff.\n  Use when the user asks to summarize changes, write a PR description, or\n  prep release notes for a branch.\n---\n\n# PR Summary Skill\n\n## Steps\n1. Run `git diff --stat` and `git diff` to gather the change set.\n2. Group changes: feature / fix / refactor / tests / docs.\n3. Fill the template below — describe what changed, factually.\n\n## Output template\n\\`\\`\\`\n## What changed\n<one paragraph>\n\n## Changes by area\n- **Feature:** ...\n- **Fix:** ...\n\n## How to verify\n1. ...\n\\`\\`\\`\n\n## Guardrails\n- Never invent a ticket number — write \"TODO: link ticket\" if absent.\n- Flag auth/billing/migration changes under \"⚠️ Needs careful review\"."
+    },
+    "enterprise": [
+      "Codify your org's PR, incident, and ADR (architecture decision record) formats as skills — every output is consistent regardless of who's driving.",
+      "Ship domain procedures: 'how we write a Terraform module', 'how we add a feature flag', bundled with validation scripts.",
+      "Distribute skills org-wide inside a plugin so a new team inherits institutional know-how on day one."
+    ],
+    "lab": {
+      "goal": "Build and trigger your first skill.",
+      "steps": [
+        "Copy <code>examples/skills/pr-summary/SKILL.md</code> into <code>.claude/skills/pr-summary/SKILL.md</code> in a git repo.",
+        "Make a trivial change to any file (don't commit).",
+        "In Claude Code, type <code>/pr-summary</code> — confirm it reads your diff and produces the templated output.",
+        "Now tighten the <code>description</code> to also trigger on the phrase 'describe my branch', and verify Claude picks it up automatically when you ask that."
+      ]
+    },
+    "pitfalls": [
+      "Vague descriptions are the #1 failure — 'helps with PRs' won't match reliably. Say exactly when to use it.",
+      "Don't dump a novel in SKILL.md; keep the always-loaded part lean and push detail into referenced files.",
+      "A skill is instructions, not a sandbox — it runs in your main session's context and permissions."
+    ],
+    "quiz": {
+      "q": "Why does the 'description' field matter more than almost anything else in a skill?",
+      "options": [
+        "It's shown in the UI only",
+        "It's what Claude matches against to decide when to load the skill",
+        "It sets the model used",
+        "It controls file permissions"
+      ],
+      "answer": 1,
+      "explain": "Thanks to progressive disclosure, only the name+description stay in context. Claude uses the description to decide whether the task fits, so a precise 'what + when' is what makes a skill fire at the right time."
+    }
+  },
+  {
+    "id": "subagents",
+    "icon": "🤖",
+    "title": "Subagents",
+    "tagline": "Delegate to a focused specialist with its own context window and tools.",
+    "level": "Intermediate",
+    "mins": 14,
+    "group": "The Six Layers",
+    "whatItIs": "<p>A <b>subagent</b> is a separate Claude instance your main session can delegate a task to. It has its own context window, its own system prompt, and a restricted toolset. The main agent hands off a task, the subagent works in isolation, and only its <i>final result</i> comes back — keeping your main context clean.</p>",
+    "mentalModel": "Subagents are teammates you assign a ticket to. They go off, do the work in their own headspace, and report back a summary — you don't absorb every file they read.",
+    "whenToUse": [
+      "Focused, well-scoped jobs: 'audit this for security', 'find everywhere X is used', 'write tests for this module'.",
+      "Work that would flood your main context with noise (large searches, log triage).",
+      "Tasks needing a different 'persona' or a restricted toolset (e.g. read-only reviewer).",
+      "NOT for tiny tasks (delegation has overhead) or work needing tight back-and-forth with you."
+    ],
+    "anatomy": {
+      "location": "<code>.claude/agents/&lt;name&gt;.md</code> (project) or <code>~/.claude/agents/&lt;name&gt;.md</code> (personal). Manage interactively with <code>/agents</code>.",
+      "format": "Markdown system prompt with YAML frontmatter: <code>name</code>, <code>description</code> (when to delegate — say 'use PROACTIVELY' to encourage auto-use), optional <code>tools</code> (allowlist; omit to inherit all), optional <code>model</code>."
+    },
+    "steps": [
+      "<b>Run <code>/agents</code></b> and choose 'Create new agent' — or hand-write the file.",
+      "<b>Name + describe.</b> The <code>description</code> tells the main agent when to delegate. Add 'use PROACTIVELY' for jobs that should auto-trigger.",
+      "<b>Restrict tools</b> in frontmatter. A reviewer should get <code>Read, Grep, Glob, Bash</code> — no Write. Least privilege matters.",
+      "<b>Pick a model</b> if you want — a cheap model for triage, a strong one for deep review.",
+      "<b>Write the system prompt</b> as the body: role, scope, what to look for, and an exact output format.",
+      "<b>Invoke:</b> ask the main agent to delegate, or say 'use the security-auditor subagent on this diff'."
+    ],
+    "code": {
+      "file": ".claude/agents/security-auditor.md",
+      "lang": "markdown",
+      "body": "---\nname: security-auditor\ndescription: Read-only security reviewer for a code change. Use PROACTIVELY\n  before merging anything touching auth, input handling, or secrets.\n  Returns a prioritized findings list — it does not edit code.\ntools: Read, Grep, Glob, Bash\nmodel: sonnet\n---\n\nYou are a senior application-security engineer reviewing a code change.\n\n## Scope\n- Review only the diff/files you're pointed at. Never refactor.\n- Read-only tools only; use Bash for SAST (semgrep, npm audit), not edits.\n\n## Look for (priority order)\n1. Injection (SQL/command/template, unsafe eval)\n2. Broken authN/authZ, privilege escalation\n3. Hardcoded secrets / secrets in logs\n4. Unvalidated input reaching a sink; SSRF\n\n## Output\nPer finding: Severity · file:line · Issue · Why it matters · Fix.\nEnd with: \"SAFE TO MERGE\" or \"BLOCK — N critical/high findings\"."
+    },
+    "enterprise": [
+      "A read-only <b>security-auditor</b> and <b>pii-scanner</b> that run before merges — guardrails that scale across teams.",
+      "A cheap-model <b>triage</b> agent fans out across logs/tickets, escalating only what matters to a strong-model agent.",
+      "Domain specialists: a <b>db-migration</b> agent, a <b>terraform-reviewer</b> agent — each with exactly the tools it needs and nothing more (least privilege)."
+    ],
+    "lab": {
+      "goal": "Delegate a real review to a specialist.",
+      "steps": [
+        "Copy <code>examples/agents/security-auditor.md</code> into <code>.claude/agents/</code>.",
+        "Run <code>/agents</code> and confirm it appears in the list.",
+        "Make a small code change with an obvious issue (e.g. a hardcoded API key) in a scratch file.",
+        "Ask Claude: 'Use the security-auditor subagent to review my changes.' Confirm it returns findings and a verdict — and that your main context stays clean."
+      ]
+    },
+    "pitfalls": [
+      "Giving a reviewer Write/Edit tools defeats the point — restrict the toolset.",
+      "Over-delegation adds latency and token cost; only delegate work that's genuinely separable.",
+      "The subagent can't see your main conversation — give it everything it needs in the delegation prompt."
+    ],
+    "quiz": {
+      "q": "What's the main reason to send a large codebase search to a subagent instead of doing it inline?",
+      "options": [
+        "Subagents are always faster",
+        "It keeps the noisy intermediate results out of your main context window",
+        "Subagents can edit files the main agent can't",
+        "It's the only way to use Grep"
+      ],
+      "answer": 1,
+      "explain": "A subagent works in its own context window and returns only a final summary. That isolation keeps hundreds of file-read lines out of your main session, preserving its context budget."
+    }
+  },
+  {
+    "id": "hooks",
+    "icon": "🪝",
+    "title": "Hooks",
+    "tagline": "Deterministic automation the harness runs — not the model's choice.",
+    "level": "Intermediate → Advanced",
+    "mins": 16,
+    "group": "The Six Layers",
+    "whatItIs": "<p><b>Hooks</b> are shell commands the Claude Code <i>harness</i> runs automatically at defined lifecycle events. Unlike instructions (which the model may or may not follow), hooks always fire. They can observe, inject context, or <b>block</b> an action. This is how you turn 'please don't' into 'cannot'.</p>",
+    "mentalModel": "Hooks are the CI pipeline and the office keycard reader of your AI session: deterministic gates that run regardless of what the model 'decides'.",
+    "whenToUse": [
+      "Enforce policy: block dangerous Bash commands, prevent edits to protected paths.",
+      "Auto-format / auto-lint every file Claude writes (PostToolUse).",
+      "Inject always-on context at prompt time (UserPromptSubmit stdout is added to context).",
+      "Audit & telemetry: log every session or tool use centrally (Stop / PostToolUse).",
+      "NOT for judgment calls that need the model's reasoning — that's a skill or subagent."
+    ],
+    "anatomy": {
+      "location": "<code>.claude/settings.json</code> (project), <code>.claude/settings.local.json</code> (personal/project), or <code>~/.claude/settings.json</code> (global), under a top-level <code>hooks</code> key.",
+      "format": "JSON. Events include <code>PreToolUse</code>, <code>PostToolUse</code>, <code>UserPromptSubmit</code>, <code>Stop</code>, <code>SubagentStop</code>, <code>SessionStart</code>, <code>Notification</code>, <code>PreCompact</code>. Each has a <code>matcher</code> (e.g. tool name) and a list of <code>command</code> hooks."
+    },
+    "steps": [
+      "<b>Pick the event.</b> Want to stop something before it runs? <code>PreToolUse</code>. React after? <code>PostToolUse</code>. Add context to every prompt? <code>UserPromptSubmit</code>.",
+      "<b>Set the matcher.</b> e.g. <code>\"Bash\"</code> to target shell calls, or <code>\"Edit|Write\"</code> for file writes.",
+      "<b>Write the command.</b> It receives a JSON payload on <b>stdin</b> (tool name, inputs, file paths). Read it in your script.",
+      "<b>Control flow with exit codes.</b> In a PreToolUse hook, <b>exit 2 BLOCKS</b> the action and sends your stderr back to Claude; exit 0 allows. stdout from UserPromptSubmit is injected into context.",
+      "<b>Use env vars</b> like <code>$CLAUDE_FILE_PATHS</code> for convenience in simple one-liners.",
+      "<b>Test it</b> by triggering the matching action and watching it fire (or block)."
+    ],
+    "code": {
+      "file": ".claude/settings.json  (hooks block)",
+      "lang": "json",
+      "body": "{\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"matcher\": \"Bash\",\n        \"hooks\": [\n          { \"type\": \"command\", \"command\": \"node .claude/hooks/guard-bash.js\" }\n        ]\n      }\n    ],\n    \"PostToolUse\": [\n      {\n        \"matcher\": \"Edit|Write|MultiEdit\",\n        \"hooks\": [\n          { \"type\": \"command\",\n            \"command\": \"npx prettier --write \\\"$CLAUDE_FILE_PATHS\\\" 2>/dev/null\" }\n        ]\n      }\n    ],\n    \"UserPromptSubmit\": [\n      {\n        \"hooks\": [\n          { \"type\": \"command\",\n            \"command\": \"echo 'Policy: no direct commits to main'\" }\n        ]\n      }\n    ]\n  }\n}"
+    },
+    "code2": {
+      "file": ".claude/hooks/guard-bash.js  (a blocking PreToolUse hook)",
+      "lang": "javascript",
+      "body": "#!/usr/bin/env node\n// Reads the tool payload from stdin; exit 2 BLOCKS the command.\nconst DENY = [/\\brm\\s+-rf\\s+\\//, /git\\s+push.*--force/, /drop\\s+database/i];\nlet raw = \"\";\nprocess.stdin.on(\"data\", c => (raw += c));\nprocess.stdin.on(\"end\", () => {\n  let cmd = \"\";\n  try { cmd = (JSON.parse(raw).tool_input || {}).command || \"\"; }\n  catch { process.exit(0); }\n  const hit = DENY.find(re => re.test(cmd));\n  if (hit) {\n    console.error(\"BLOCKED by policy: matched \" + hit);\n    process.exit(2);          // <-- blocks the tool call, tells Claude why\n  }\n  process.exit(0);            // allow\n});"
+    },
+    "enterprise": [
+      "Compliance as code: a PreToolUse Bash guard makes prod-destructive commands literally un-runnable by Claude — auditable and uniform.",
+      "Zero-style-debate: PostToolUse Prettier/ESLint means AI-written code always matches house style before review.",
+      "Traceability: a Stop hook appends a signed record of each AI session to a central log for SOC2 / audit.",
+      "Always-on guardrails: UserPromptSubmit injects current policy reminders into every single turn."
+    ],
+    "lab": {
+      "goal": "Block a dangerous command and auto-format a write.",
+      "steps": [
+        "Copy <code>examples/hooks/guard-bash.js</code> to <code>.claude/hooks/guard-bash.js</code> and the <code>hooks</code> block from <code>examples/hooks/settings.hooks.json</code> into <code>.claude/settings.json</code>.",
+        "Restart Claude Code so it loads the settings.",
+        "Ask Claude to run <code>rm -rf /tmp/whatever</code> (harmless target but matches the pattern variant) — actually test with <code>git push --force</code> on a throwaway branch. Confirm it's blocked with your message.",
+        "Ask Claude to create a messy-formatted JS file and confirm the PostToolUse Prettier hook cleans it automatically."
+      ]
+    },
+    "pitfalls": [
+      "Hooks run with YOUR shell privileges — a buggy hook can do real damage. Review hook code like production code.",
+      "Only exit code 2 blocks in PreToolUse; other non-zero codes surface an error but may not block. Read the payload, be precise.",
+      "Slow hooks slow every matching action. Keep them fast; fail open where safety allows.",
+      "Hooks are powerful and run automatically — never install hooks from an untrusted source without reading them."
+    ],
+    "quiz": {
+      "q": "In a PreToolUse hook, what does exiting with code 2 do?",
+      "options": [
+        "Logs a warning but lets the tool run",
+        "Blocks the tool call and feeds your stderr back to Claude",
+        "Restarts the session",
+        "Switches the model"
+      ],
+      "answer": 1,
+      "explain": "Exit code 2 from a PreToolUse hook blocks the tool call. Whatever you print to stderr is returned to Claude as the reason, so it can adapt. Exit 0 allows the call."
+    }
+  },
+  {
+    "id": "mcp",
+    "icon": "🔌",
+    "title": "MCP Servers",
+    "tagline": "Model Context Protocol — give Claude access to your real systems.",
+    "level": "Intermediate → Advanced",
+    "mins": 16,
+    "group": "The Six Layers",
+    "whatItIs": "<p><b>MCP (Model Context Protocol)</b> is an open standard for connecting Claude to external tools and data. An <b>MCP server</b> exposes <i>tools</i> (actions), <i>resources</i> (data), and <i>prompts</i> over a standard interface. Add a Postgres server and Claude can query your DB; add a Jira server and it can read/file tickets — all without you pasting data or secrets into the chat.</p>",
+    "mentalModel": "MCP is USB-C for AI. The server is the device (a DB, an API, a filesystem); the protocol is the universal port. Plug it in and Claude gains a new capability.",
+    "whenToUse": [
+      "Claude needs live data from a system: database, data warehouse, ticketing, monitoring, docs.",
+      "You want a capability reused across many tools/clients via one standard server.",
+      "Sensitive access where you want auth handled by the server, not embedded in prompts.",
+      "NOT when a simple Bash command or local file read already does the job — don't over-engineer."
+    ],
+    "anatomy": {
+      "location": "Project: <code>.mcp.json</code> at repo root (shared via git). User/local scope via the CLI: <code>claude mcp add</code>. Inspect with <code>/mcp</code>.",
+      "format": "JSON under <code>mcpServers</code>. Transports: <b>stdio</b> (Claude launches a local <code>command</code>), and <b>http</b>/<b>sse</b> (a remote <code>url</code>). Pass secrets via <code>${ENV_VARS}</code>, never inline."
+    },
+    "steps": [
+      "<b>Find or build a server.</b> Many exist (<code>@modelcontextprotocol/server-postgres</code>, <code>-filesystem</code>, GitHub, etc.); or build one with the MCP SDK.",
+      "<b>Add it.</b> Quick way: <code>claude mcp add postgres -- npx -y @modelcontextprotocol/server-postgres</code>. Team way: commit a <code>.mcp.json</code>.",
+      "<b>Wire secrets via env.</b> Reference <code>${DATABASE_URL}</code>; keep the real value in your environment, not the file.",
+      "<b>Choose the transport.</b> Local tool → stdio. Internal/remote service → http/sse with an <code>Authorization</code> header from an env var.",
+      "<b>Verify with <code>/mcp</code></b> — it lists servers, their tools, and connection status.",
+      "<b>Use it.</b> Ask Claude something only the server can answer ('how many users signed up yesterday?') and it'll call the server's tools."
+    ],
+    "code": {
+      "file": ".mcp.json  (project root, shared with the team)",
+      "lang": "json",
+      "body": "{\n  \"mcpServers\": {\n    \"postgres-readonly\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@modelcontextprotocol/server-postgres\"],\n      \"env\": { \"DATABASE_URL\": \"${POSTGRES_READONLY_URL}\" }\n    },\n    \"filesystem-docs\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"./docs\"]\n    },\n    \"company-knowledge-base\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.internal.example.com/kb\",\n      \"headers\": { \"Authorization\": \"Bearer ${KB_MCP_TOKEN}\" }\n    }\n  }\n}"
+    },
+    "enterprise": [
+      "Read-only warehouse access (Snowflake/Postgres) lets Claude answer data questions and draft analyses — with permissions enforced by the server.",
+      "Internal bridges: a Jira/Confluence/ServiceNow MCP server turns Claude into a teammate that reads tickets and drafts docs against real context.",
+      "Govern it: distribute approved MCP servers via a plugin, and combine with hooks to log every MCP tool call for audit.",
+      "Security posture: secrets stay in the server's environment and IAM; they never enter the model's prompt or transcript."
+    ],
+    "lab": {
+      "goal": "Connect Claude to a local filesystem MCP server (zero credentials needed).",
+      "steps": [
+        "Create a <code>./docs</code> folder with a couple of markdown files.",
+        "Run <code>claude mcp add fs -- npx -y @modelcontextprotocol/server-filesystem ./docs</code> (or copy the <code>filesystem-docs</code> entry from <code>examples/mcp/.mcp.json</code>).",
+        "Run <code>/mcp</code> and confirm the server is connected and lists its tools.",
+        "Ask Claude: 'Using the fs MCP server, summarize what's in my docs folder.' Confirm it calls the server rather than guessing."
+      ]
+    },
+    "pitfalls": [
+      "Never inline secrets in .mcp.json — it's committed. Always use ${ENV} indirection.",
+      "MCP servers run code and may have broad access; only add servers you trust, and prefer read-only scopes.",
+      "Too many servers/tools bloat the tool list and confuse selection. Add what you need.",
+      "A committed .mcp.json shares the server config but not the secrets — teammates still set their own env vars."
+    ],
+    "quiz": {
+      "q": "Your .mcp.json is committed to git. How should the database password reach the Postgres MCP server?",
+      "options": [
+        "Hardcoded in the args array",
+        "Via a ${ENV_VAR} reference resolved from the environment",
+        "Pasted into the chat each session",
+        "In CLAUDE.md"
+      ],
+      "answer": 1,
+      "explain": "Use ${ENV_VAR} indirection so the committed file only references the secret. The actual value lives in each developer's environment / a secrets manager — never in the repo or the prompt."
+    }
+  },
+  {
+    "id": "commands",
+    "icon": "⌨️",
+    "title": "Slash Commands",
+    "tagline": "Typed shortcuts that expand into a prompt — your team's macros.",
+    "level": "Beginner",
+    "mins": 8,
+    "group": "The Six Layers",
+    "whatItIs": "<p>A <b>slash command</b> is a Markdown file that becomes a typed shortcut like <code>/release-notes</code>. It expands into a prompt template you control, can take <code>$ARGUMENTS</code>, and can even embed live shell output with <code>!`cmd`</code>. Think of it as a saved, parameterized prompt the whole team can run.</p>",
+    "mentalModel": "Slash commands are keyboard macros for prompts. Skills are model-invoked playbooks; slash commands are human-invoked ones you type on demand.",
+    "whenToUse": [
+      "A prompt you run often and want to standardize: '/release-notes', '/triage', '/explain-this'.",
+      "Workflows that should pull in fresh context (git log, test output) at run time.",
+      "Lightweight team tooling that doesn't need a whole skill folder."
+    ],
+    "anatomy": {
+      "location": "<code>.claude/commands/&lt;name&gt;.md</code> (project) or <code>~/.claude/commands/&lt;name&gt;.md</code> (personal). Subfolders namespace them.",
+      "format": "Markdown body = the prompt. Optional frontmatter: <code>description</code>, <code>argument-hint</code>, <code>allowed-tools</code>. Use <code>$ARGUMENTS</code> for input and <code>!`shell`</code> to inline command output."
+    },
+    "steps": [
+      "<b>Create the file:</b> <code>.claude/commands/release-notes.md</code> → becomes <code>/release-notes</code>.",
+      "<b>Write the prompt body</b> describing exactly what you want done.",
+      "<b>Add dynamic context</b> with <code>!`git log ...`</code> — it runs when the command is invoked and inlines the output.",
+      "<b>Accept input</b> with <code>$ARGUMENTS</code> (and document it via <code>argument-hint</code>).",
+      "<b>Scope tools</b> with <code>allowed-tools</code> so the command can only do what it needs.",
+      "<b>Type <code>/release-notes v1.2.0</code></b> to run it."
+    ],
+    "code": {
+      "file": ".claude/commands/release-notes.md",
+      "lang": "markdown",
+      "body": "---\ndescription: Draft release notes from commits since the last tag.\nargument-hint: \"[since-tag]\"\nallowed-tools: Bash(git*), Read\n---\n\nGenerate customer-facing release notes.\n\n- Last tag: !\\`git describe --tags --abbrev=0\\`\n- Commits:  !\\`git log $(git describe --tags --abbrev=0)..HEAD --pretty=%s\\`\n\nArguments: $ARGUMENTS\n\nTask:\n1. Group commits into Features / Fixes / Internal.\n2. Rewrite each in plain user-benefit language.\n3. Output markdown with a version heading and today's date."
+    },
+    "enterprise": [
+      "Standardize recurring workflows (release notes, incident triage, onboarding walkthroughs) as one-word commands.",
+      "Embed live context so commands are always current — no stale copy-paste prompts in a wiki.",
+      "Ship them in a plugin so every repo gets the same command palette."
+    ],
+    "lab": {
+      "goal": "Create a working slash command with live git context.",
+      "steps": [
+        "Copy <code>examples/commands/release-notes.md</code> into <code>.claude/commands/</code>.",
+        "In a repo with a few commits, type <code>/release-notes</code>.",
+        "Confirm the <code>!`git log`</code> output is inlined and the notes are grouped & rewritten.",
+        "Add a <code>$ARGUMENTS</code> use (e.g. a target audience) and run <code>/release-notes executives</code>."
+      ]
+    },
+    "pitfalls": [
+      "Commands you type vs. skills the model auto-picks — choose based on who decides to run it.",
+      "!`shell` runs every invocation; keep it fast and side-effect-free.",
+      "Scope allowed-tools — a command that only reads git shouldn't be able to Write."
+    ],
+    "quiz": {
+      "q": "What's the key difference between a slash command and a skill?",
+      "options": [
+        "Skills can't use tools",
+        "Slash commands are invoked by the human typing them; skills are auto-selected by the model when a task matches",
+        "Slash commands run on a server",
+        "There is no difference"
+      ],
+      "answer": 1,
+      "explain": "A slash command is a human-typed shortcut. A skill is model-invoked: Claude reads skill descriptions and loads one when the task fits. Same spirit (reusable prompts/procedures), different trigger."
+    }
+  },
+  {
+    "id": "plugins",
+    "icon": "📦",
+    "title": "Plugins & Marketplaces",
+    "tagline": "Bundle everything above and distribute it across the whole org.",
+    "level": "Advanced",
+    "mins": 14,
+    "group": "The Six Layers",
+    "whatItIs": "<p>A <b>plugin</b> is a folder that bundles any combination of commands, skills, subagents, hooks, and MCP servers behind a <code>.claude-plugin/plugin.json</code> manifest. A <b>marketplace</b> is a git repo that lists plugins. Together they let a platform team ship one install that gives every developer the same skills, agents, guardrails, and integrations.</p>",
+    "mentalModel": "If the other five layers are apps, a plugin is the signed installer and the marketplace is your company's internal app store.",
+    "whenToUse": [
+      "You've built useful skills/agents/hooks/MCP and want to share them beyond one repo.",
+      "You need consistency and governance across many teams.",
+      "You want versioned, updatable distribution (bump version → everyone updates).",
+      "NOT for a one-off personal tweak — just keep that in your ~/.claude/."
+    ],
+    "anatomy": {
+      "location": "A plugin folder with <code>.claude-plugin/plugin.json</code>. A marketplace is a repo with a <code>.claude-plugin/marketplace.json</code> listing plugins. Installed via the <code>/plugin</code> command.",
+      "format": "<code>plugin.json</code> declares <code>name</code>, <code>version</code>, and paths to the <code>commands</code>/<code>agents</code>/<code>skills</code>/<code>hooks</code>/<code>mcpServers</code> it ships."
+    },
+    "steps": [
+      "<b>Lay out the folder.</b> Put your <code>commands/</code>, <code>skills/</code>, <code>agents/</code>, <code>hooks/</code>, and <code>.mcp.json</code> inside one plugin directory.",
+      "<b>Write the manifest:</b> <code>.claude-plugin/plugin.json</code> with name, version, and the paths to each bundled part.",
+      "<b>Publish a marketplace.</b> Create a git repo with <code>.claude-plugin/marketplace.json</code> that lists your plugin(s) and where they live.",
+      "<b>Add the marketplace:</b> users run <code>/plugin marketplace add your-org/claude-marketplace</code>.",
+      "<b>Install:</b> <code>/plugin install enterprise-toolkit</code> — the user instantly gets all bundled features.",
+      "<b>Ship updates</b> by bumping <code>version</code> and re-publishing; users update from the <code>/plugin</code> menu."
+    ],
+    "code": {
+      "file": "enterprise-toolkit/.claude-plugin/plugin.json",
+      "lang": "json",
+      "body": "{\n  \"name\": \"enterprise-toolkit\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Company-standard bundle: review skills, a security-auditor\n    agent, policy hooks, and the internal knowledge-base MCP server.\",\n  \"author\": { \"name\": \"Platform Engineering\", \"email\": \"platform@example.com\" },\n  \"commands\": \"./commands\",\n  \"agents\": \"./agents\",\n  \"skills\": \"./skills\",\n  \"hooks\": \"./hooks/hooks.json\",\n  \"mcpServers\": \"./.mcp.json\"\n}"
+    },
+    "code2": {
+      "file": "claude-marketplace/.claude-plugin/marketplace.json",
+      "lang": "json",
+      "body": "{\n  \"name\": \"acme-internal\",\n  \"owner\": { \"name\": \"Platform Engineering\" },\n  \"plugins\": [\n    {\n      \"name\": \"enterprise-toolkit\",\n      \"source\": \"./plugins/enterprise-toolkit\",\n      \"description\": \"Org-standard Claude Code guardrails and tooling.\"\n    }\n  ]\n}"
+    },
+    "enterprise": [
+      "One install = the org's entire AI guardrail stack: review skills + security agent + policy hooks + approved MCP servers.",
+      "Governance & versioning: roll out a new compliance hook to 500 engineers by publishing v1.1.0.",
+      "Per-team marketplaces: the data team ships warehouse MCP + query skills; the platform team ships infra agents — devs install what they need.",
+      "Onboarding: a new hire runs two <code>/plugin</code> commands and inherits years of institutional tooling."
+    ],
+    "lab": {
+      "goal": "Package your skill + agent + hook into one plugin.",
+      "steps": [
+        "Use the scaffold in <code>examples/plugins/enterprise-toolkit/</code>. Drop your <code>pr-summary</code> skill, <code>security-auditor</code> agent, and a <code>hooks/hooks.json</code> inside it.",
+        "Confirm <code>.claude-plugin/plugin.json</code> points at each folder.",
+        "Create a local marketplace repo with a <code>marketplace.json</code> listing the plugin (see the code samples above).",
+        "Run <code>/plugin marketplace add &lt;path-or-repo&gt;</code> then <code>/plugin install enterprise-toolkit</code>, and verify the skill, agent, and hook all show up."
+      ]
+    },
+    "pitfalls": [
+      "Version discipline matters — consumers update based on the version field; bump it on every change.",
+      "A plugin can ship hooks and MCP servers that run code: publish only from trusted, reviewed sources, and have consumers read what they install.",
+      "Keep plugins focused; a mega-plugin that ships everything is hard to reason about and govern."
+    ],
+    "quiz": {
+      "q": "Your platform team wants 300 engineers to all get the same security agent and policy hooks, with easy updates. Best approach?",
+      "options": [
+        "Email everyone a zip of .claude files",
+        "Publish a plugin to an internal marketplace and have devs /plugin install it",
+        "Put it all in each repo's CLAUDE.md",
+        "Ask each team to rebuild it"
+      ],
+      "answer": 1,
+      "explain": "Plugins + a marketplace give versioned, one-command distribution and updates. Bundling skills, agents, hooks, and MCP servers into one installable package is exactly the enterprise standardization use case."
+    }
+  },
+  {
+    "id": "case-study",
+    "icon": "🏦",
+    "title": "Case Study: SafePay",
+    "tagline": "A real payments-platform problem, solved end-to-end with all six layers.",
+    "level": "Apply It",
+    "mins": 18,
+    "group": "Apply It",
+    "whatItIs": "<p><b>SafePay</b> is a 200-engineer payments platform (think Stripe-lite). Leadership wants to adopt Claude Code to move faster — but payments means real money, PII, and auditors. This lesson walks the <i>actual pains</i> and shows which layer removes each one. The point isn't 'look what features exist' — it's <b>start from the problem, pick the lightest layer that solves it.</b></p>",
+    "mentalModel": "Don't ask 'what can this feature do?' Ask 'what hurts, and which layer makes that pain impossible?' Match symptoms to layers.",
+    "whenToUse": [
+      "<b>Symptom: new hires take 3 weeks to ramp</b> → encode the project in <b>Instructions (CLAUDE.md)</b>.",
+      "<b>Symptom: every PR / incident report looks different</b> → standardize with <b>Skills</b>.",
+      "<b>Symptom: security review is a merge bottleneck</b> → a read-only <b>security-auditor subagent</b> pre-screens.",
+      "<b>Symptom: fear that AI could drop a prod table or commit a secret</b> → make it impossible with <b>Hooks</b>.",
+      "<b>Symptom: engineers tab between Jira, Postgres, Confluence all day</b> → connect them via <b>MCP</b>.",
+      "<b>Symptom: 200 engineers, no two setups alike</b> → ship one <b>Plugin</b> from an internal marketplace."
+    ],
+    "anatomy": {
+      "location": "The pain inventory → solution map. Each problem gets the <i>lightest</i> layer that fully solves it — guidance for judgment, enforcement only for safety-critical rules.",
+      "format": "Phased rollout: ship instructions+skills first (low risk, fast win), then subagents+MCP (capability), then hooks+plugin (governance & scale)."
+    },
+    "steps": [
+      "<b>Phase 1 — Win trust (week 1).</b> Add a tight <code>CLAUDE.md</code> (golden rules, commands, architecture map) and the <code>pr-summary</code> + <code>incident-report</code> skills. Engineers feel faster immediately; zero risk.",
+      "<b>Phase 2 — Add capability (week 2–3).</b> Add the read-only <code>security-auditor</code> and <code>test-writer</code> subagents, and wire read-only MCP to Postgres, Jira, and Confluence so Claude answers from real data.",
+      "<b>Phase 3 — Add governance (week 4).</b> Turn on hooks: <code>guard-bash</code> blocks prod-destructive commands, a PII-scan PostToolUse hook, and a Stop audit-log for SOC2.",
+      "<b>Phase 4 — Scale it (week 5).</b> Bundle all of the above into the <code>safepay-toolkit</code> plugin and publish to the internal marketplace. Every engineer runs two <code>/plugin</code> commands and inherits the whole setup.",
+      "<b>Phase 5 — Iterate.</b> Track metrics, tune skill descriptions, version the plugin. Roll a new compliance hook to all 200 engineers by bumping a version."
+    ],
+    "code": {
+      "file": "SafePay — pain → layer → outcome",
+      "lang": "text",
+      "body": "PROBLEM                              LAYER (solution)             ENFORCED?   OUTCOME\n-----------------------------------------------------------------------------------------\nSlow onboarding, tribal knowledge    Instructions (CLAUDE.md)     guided      ramp 3wk -> 3d\nInconsistent PRs / incident docs     Skills (pr-summary, etc.)    guided      uniform output\nSecurity review bottleneck           Subagent (security-auditor)  guided      pre-screened PRs\nFlaky / missing tests                Subagent (test-writer)       guided      coverage up\n\"AI might drop a prod table\"         Hook (guard-bash, exit 2)    ENFORCED    cannot happen\n\"AI might commit a secret/PII\"       Hook (PostToolUse pii-scan)  ENFORCED    blocked + logged\nAuditors need a trail                Hook (Stop -> audit.log)     ENFORCED    SOC2 evidence\nContext-hunting across systems       MCP (Postgres/Jira/Confl.)   capability  answers from data\n200 engineers, no two setups alike   Plugin + marketplace         scale       one-command install\n\nRULE OF THUMB:\n  - Judgment / formatting / knowledge  -> guide it (instructions, skills, subagents)\n  - Safety-critical, must-never-happen -> enforce it (hooks)\n  - Access to real systems             -> connect it (MCP)\n  - Consistency across the org         -> distribute it (plugin)"
+    },
+    "enterprise": [
+      "<b>Outcome — onboarding:</b> a committed CLAUDE.md + skills cut effective ramp time from weeks to days.",
+      "<b>Outcome — safety:</b> destructive prod commands are deterministically blocked, not 'usually avoided' — the difference an auditor cares about.",
+      "<b>Outcome — throughput:</b> the security-auditor subagent clears trivial reviews so humans focus on the 10% that need judgment.",
+      "<b>Outcome — compliance:</b> every AI session is logged centrally; secret/PII writes are blocked at the hook layer.",
+      "<b>Outcome — consistency:</b> one versioned plugin means all 200 engineers share identical guardrails, updated centrally."
+    ],
+    "lab": {
+      "goal": "Build one vertical slice of the SafePay setup.",
+      "steps": [
+        "Pick ONE pain from the table above that you actually have at work.",
+        "Implement the matching layer using the relevant <code>examples/</code> file (e.g. the guard-bash hook for 'AI might drop a prod table').",
+        "Write 2–3 sentences: what was the pain, which layer, and is it <i>enforced</i> or <i>guided</i> — and why that's the right call.",
+        "Bonus: sketch how you'd phase the full rollout to YOUR team in 5 weeks, mirroring the phases above."
+      ]
+    },
+    "pitfalls": [
+      "Leading with hooks (enforcement) before delivering value (skills) makes the tool feel like a cop. Win trust first, govern second.",
+      "Enforcing judgment calls ('PRs must be phrased like X' as a hard block) backfires — guide those, enforce only safety.",
+      "Skipping the metrics step means you can't show ROI and the rollout stalls at one team."
+    ],
+    "quiz": {
+      "q": "SafePay's auditors require proof that a prod database drop is *impossible* via Claude, not just discouraged. Which layer, and why?",
+      "options": [
+        "Instructions — write 'never drop prod' in CLAUDE.md",
+        "A Skill that explains safe DB practices",
+        "A PreToolUse Hook that exits 2 on matching commands — deterministic, harness-enforced",
+        "An MCP server"
+      ],
+      "answer": 2,
+      "explain": "Auditors need deterministic enforcement. Instructions and skills are guidance the model usually follows. Only a hook is run by the harness and can hard-block the command (exit 2) and log it — that's defensible evidence."
+    }
+  },
+  {
+    "id": "build-projects",
+    "icon": "🛠️",
+    "title": "Real-World Build Projects",
+    "tagline": "Production-grade dev tools you can actually build and ship with these features.",
+    "level": "Apply It",
+    "mins": 18,
+    "group": "Apply It",
+    "whatItIs": "<p>These aren't toy katas — they're <b>real engineering projects</b> a team would put on a roadmap. Each one is a piece of developer software (a bot, a service, a CLI, a plugin) built on the Claude API and/or Claude Code's feature layers. Every card gives the <b>problem, tech stack, the AI features it uses, and concrete deliverables</b> so you can scope it like a real ticket.</p>",
+    "mentalModel": "Think product, not exercise: each project is something you could demo to your team on Friday and merge to a real repo.",
+    "whenToUse": [
+      "When you want a portfolio piece that proves you can ship AI-powered dev tooling.",
+      "When a real pain on your team maps to one of these — build it for keeps.",
+      "As the seed for the Capstone: the platform-grade builds become your org's golden setup."
+    ],
+    "anatomy": {
+      "location": "Build each in its own repo with a proper stack (CI, tests, README). Wire Claude Code's feature layers into the dev workflow, and use the Claude API (<code>@anthropic-ai/sdk</code>) where the tool runs as a service.",
+      "format": "Each card: <b>Problem → Stack → AI features → Deliverables</b>. 🟢 weekend build · 🟡 a sprint · 🔴 a real internal product."
+    },
+    "steps": [
+      "<b>Pick a project</b> whose problem you actually have.",
+      "<b>Scaffold a real repo</b> — package manager, CI, tests, README. Treat it like production code.",
+      "<b>Wire the AI features</b> listed on the card (Claude Code layers for the dev workflow; the Claude API for runtime services).",
+      "<b>Ship a thin vertical slice first</b>, then iterate to the full deliverables.",
+      "<b>Add guardrails</b> — hooks/tests/CI — before you call it done. AI tooling needs the same rigor as any service."
+    ],
+    "projects": [
+      {
+        "level": "🟢 Weekend",
+        "title": "AI commit & PR assistant (Git hook + CLI)",
+        "problem": "Commit messages and PR descriptions are inconsistent and low-context.",
+        "stack": [
+          "Node.js / TypeScript",
+          "@anthropic-ai/sdk",
+          "simple-git",
+          "Husky"
+        ],
+        "features": [
+          "Skill",
+          "Slash command",
+          "Claude API"
+        ],
+        "acceptance": [
+          "CLI reads the staged diff and drafts a Conventional-Commits message",
+          "`/pr-summary` skill produces a templated PR body from the branch diff",
+          "Packaged as an installable npm bin + a prepare-commit-msg git hook"
+        ]
+      },
+      {
+        "level": "🟢 Weekend",
+        "title": "Repo onboarding bot",
+        "problem": "New engineers lose days finding how to build, test, and navigate a repo.",
+        "stack": [
+          "Claude Code",
+          "CLAUDE.md",
+          "Node script"
+        ],
+        "features": [
+          "Instructions",
+          "Skill"
+        ],
+        "acceptance": [
+          "A generated CLAUDE.md (golden rules, commands, folder map) committed to the repo",
+          "An `/onboard` skill that walks a newcomer through first build + first test",
+          "Answers 'how do I run X?' with zero repo searching"
+        ]
+      },
+      {
+        "level": "🟡 Sprint",
+        "title": "AI code-review GitHub Action",
+        "problem": "Review is a bottleneck; trivial issues slip through and reviewers burn out.",
+        "stack": [
+          "GitHub Actions",
+          "TypeScript",
+          "@anthropic-ai/sdk",
+          "Octokit"
+        ],
+        "features": [
+          "Subagent pattern",
+          "Claude API",
+          "Prompt caching"
+        ],
+        "acceptance": [
+          "On every PR, posts inline review comments grouped by severity",
+          "A security-focused pass flags injection / authz / secret issues",
+          "Caches the repo context to keep cost per PR low; fails the check only on criticals"
+        ]
+      },
+      {
+        "level": "🟡 Sprint",
+        "title": "Internal docs copilot (RAG over MCP)",
+        "problem": "Tribal knowledge is scattered across Confluence, READMEs, and runbooks.",
+        "stack": [
+          "MCP SDK",
+          "Node/TS",
+          "a vector store (pgvector / LanceDB)",
+          "embeddings"
+        ],
+        "features": [
+          "MCP server",
+          "Skills",
+          "Instructions"
+        ],
+        "acceptance": [
+          "A custom MCP server exposes a `search_docs` tool backed by a vector index",
+          "Claude answers questions by citing the actual source doc + section",
+          "Index refresh job keeps answers current; secrets via ${ENV}, never inline"
+        ]
+      },
+      {
+        "level": "🟡 Sprint",
+        "title": "Test-generation service + CI gate",
+        "problem": "Coverage is low and writing tests is tedious, so it never happens.",
+        "stack": [
+          "Node/TS or Python",
+          "Jest / pytest",
+          "GitHub Actions"
+        ],
+        "features": [
+          "Subagent",
+          "Hook (PostToolUse)",
+          "Claude API"
+        ],
+        "acceptance": [
+          "A test-writer subagent generates tests for a target module that actually run + pass",
+          "CI step proposes tests for files whose coverage dropped in the PR",
+          "Generated code is auto-formatted and linted before commit"
+        ]
+      },
+      {
+        "level": "🔴 Product",
+        "title": "Incident-response companion (Slack bot)",
+        "problem": "During incidents, responders manually grep logs, dashboards, and runbooks under pressure.",
+        "stack": [
+          "Slack Bolt",
+          "Node/TS",
+          "@anthropic-ai/sdk",
+          "MCP to logs/metrics"
+        ],
+        "features": [
+          "MCP servers",
+          "Skills",
+          "Hooks (audit log)",
+          "Claude API"
+        ],
+        "acceptance": [
+          "Bot summarizes an alert, pulls recent logs/metrics via MCP, and proposes next steps",
+          "Drafts a timeline + postmortem skeleton from the channel history",
+          "Every AI action is written to a tamper-evident audit log for the review"
+        ]
+      },
+      {
+        "level": "🔴 Product",
+        "title": "Self-serve data Q&A assistant",
+        "problem": "Analysts and support manually query the warehouse for routine questions.",
+        "stack": [
+          "Read-only Postgres/Snowflake",
+          "MCP server",
+          "Next.js or Slack UI"
+        ],
+        "features": [
+          "MCP (read-only DB)",
+          "Instructions",
+          "Hooks (query guard)",
+          "Claude API"
+        ],
+        "acceptance": [
+          "Read-only MCP connection with credentials via ${ENV}; row/cost limits enforced",
+          "Natural-language questions return correct results + the SQL used (for trust)",
+          "A guard hook blocks any non-SELECT statement"
+        ]
+      },
+      {
+        "level": "🔴 Product",
+        "title": "Org-wide compliance & tooling plugin",
+        "problem": "Every team hand-rolls its own .claude config; guardrails are inconsistent.",
+        "stack": [
+          "Claude Code plugin",
+          "internal marketplace repo",
+          "Node hooks"
+        ],
+        "features": [
+          "Plugin + Marketplace",
+          "Hooks",
+          "Subagents",
+          "Skills",
+          "MCP"
+        ],
+        "acceptance": [
+          "One plugin bundles review skills, a security agent, policy hooks, and approved MCP servers",
+          "Published to an internal marketplace; installable in two `/plugin` commands",
+          "Versioned — a new compliance hook rolls out by bumping the version"
+        ]
+      }
+    ],
+    "code": {
+      "file": "Suggested roadmap (ship in this order)",
+      "lang": "text",
+      "body": "MILESTONE 1  🟢  Repo onboarding bot           (Instructions + Skill)\n             🟢  AI commit & PR assistant       (Skill + CLI + Claude API)\n\nMILESTONE 2  🟡  AI code-review GitHub Action    (Subagent pattern + API)\n             🟡  Test-generation service + CI    (Subagent + Hook)\n             🟡  Internal docs copilot (RAG)     (custom MCP server)\n\nMILESTONE 3  🔴  Self-serve data Q&A assistant   (read-only MCP + guard hook)\n             🔴  Incident-response Slack bot      (MCP + Skills + audit hook)\n             🔴  Compliance & tooling plugin      (Plugin + marketplace)  <- Capstone seed"
+    },
+    "enterprise": [
+      "These are line items on a real platform-engineering roadmap — each delivers measurable dev-velocity or risk-reduction value.",
+      "The code-review Action and test-gen service cut review and QA time without lowering the bar.",
+      "The docs copilot and data Q&A assistant turn scattered knowledge and dashboards into a self-serve interface.",
+      "The compliance plugin is how you make all of the above consistent and governed across every team."
+    ],
+    "lab": {
+      "goal": "Ship a real vertical slice this week.",
+      "steps": [
+        "Pick ONE project whose problem you actually have at work.",
+        "Scaffold a real repo (package manager, CI, a test, a README) — not a scratch folder.",
+        "Build the thinnest end-to-end slice that delivers value (e.g. the code-review Action commenting on one rule).",
+        "Add a guardrail (a hook, a test, a CI check) before you call it done.",
+        "Write a short README 'why + how to run' so a teammate could pick it up."
+      ]
+    },
+    "pitfalls": [
+      "Skipping engineering rigor because 'it's an AI tool' — these still need tests, CI, and error handling.",
+      "Putting secrets or API keys in code/config instead of environment variables / a secrets manager.",
+      "No cost controls on API-backed services — add caching, token budgets, and rate limits early.",
+      "Over-scoping: ship the vertical slice before the full feature set."
+    ],
+    "quiz": {
+      "q": "Which build is the natural seed for the Capstone 'golden setup'?",
+      "options": [
+        "AI commit & PR assistant",
+        "Internal docs copilot",
+        "Org-wide compliance & tooling plugin",
+        "Test-generation service"
+      ],
+      "answer": 2,
+      "explain": "The compliance & tooling plugin bundles skills + a security agent + policy hooks + approved MCP servers and ships via a marketplace — exactly the distribution layer the Capstone assembles. The others become pieces it can bundle."
+    }
+  },
+  {
+    "id": "capstone",
+    "icon": "🏛️",
+    "title": "Capstone: The Golden Setup",
+    "tagline": "Assemble all six layers into one enterprise-ready configuration.",
+    "level": "Capstone",
+    "mins": 20,
+    "group": "Apply It",
+    "whatItIs": "<p>Time to combine everything. You'll build a single repo that uses <b>all six layers</b> together the way a real platform team would, then package it as a plugin. This is your reference architecture for rolling Claude Code out at an enterprise.</p>",
+    "mentalModel": "You're no longer learning features — you're designing the AI development environment your whole org will live in.",
+    "whenToUse": [
+      "Standing up Claude Code for a team or company for the first time.",
+      "Auditing an existing setup against best practice.",
+      "Designing governance: what's enforced (hooks), what's guided (instructions/skills), what's connected (MCP)."
+    ],
+    "anatomy": {
+      "location": "One repo, plus a marketplace repo for distribution.",
+      "format": "The full <code>.claude/</code> + <code>CLAUDE.md</code> + <code>.mcp.json</code> stack, wrapped in a plugin."
+    },
+    "steps": [
+      "<b>Layer 1 — Instructions:</b> write a tight CLAUDE.md with golden rules, commands, and a codebase map.",
+      "<b>Layer 2 — Skills:</b> add 2–3 org procedures (pr-summary, incident-report, adr-writer).",
+      "<b>Layer 3 — Subagents:</b> add a read-only security-auditor and a test-writer specialist.",
+      "<b>Layer 4 — Hooks:</b> add a Bash guard (block prod-destructive commands), a PostToolUse formatter, and a Stop audit logger.",
+      "<b>Layer 5 — MCP:</b> wire a read-only warehouse server and an internal-docs server, secrets via env.",
+      "<b>Layer 6 — Plugin:</b> bundle it all behind a plugin manifest and publish to an internal marketplace.",
+      "<b>Govern:</b> decide what's <i>enforced</i> vs <i>guided</i>, document it, and version it."
+    ],
+    "code": {
+      "file": "Target repo layout — the golden setup",
+      "lang": "text",
+      "body": "enterprise-repo/\n├── CLAUDE.md                          # 1. golden rules, commands, map\n├── .mcp.json                          # 5. warehouse + docs MCP (env secrets)\n└── .claude/\n    ├── settings.json                  # 4. guard-bash + prettier + audit hooks\n    ├── hooks/\n    │   ├── guard-bash.js\n    │   └── audit-log.js\n    ├── skills/\n    │   ├── pr-summary/SKILL.md         # 2.\n    │   ├── incident-report/SKILL.md\n    │   └── adr-writer/SKILL.md\n    ├── agents/\n    │   ├── security-auditor.md         # 3.\n    │   └── test-writer.md\n    └── commands/\n        └── release-notes.md            #    typed shortcut\n\n# Then wrap .claude/* + .mcp.json into a plugin and publish to a marketplace (6)."
+    },
+    "enterprise": [
+      "Enforced (hooks): destructive-command block, auto-format, session audit log.",
+      "Guided (instructions + skills): conventions, PR/incident/ADR formats, golden rules.",
+      "Delegated (subagents): security review and test generation as specialists with least-privilege tools.",
+      "Connected (MCP): read-only data + internal docs, credentials in the environment.",
+      "Distributed (plugin + marketplace): one install, versioned updates, consistent across every team."
+    ],
+    "lab": {
+      "goal": "Ship a golden setup you could hand to a real team.",
+      "steps": [
+        "Start from the <code>examples/</code> files — they already contain a skill, agent, two hooks, MCP config, a command, and a plugin scaffold.",
+        "Assemble them into the layout above inside a scratch repo.",
+        "Walk through each layer's earlier lab to confirm it works end-to-end.",
+        "Write a one-page README for your team: what's enforced, what's guided, how to install the plugin. That README is your enterprise rollout plan.",
+        "Bonus: add a SessionStart hook that prints the golden rules, so every session opens with the policy in view."
+      ]
+    },
+    "pitfalls": [
+      "Don't enforce everything — over-blocking frustrates engineers and they'll route around the tool. Enforce the few things that truly matter; guide the rest.",
+      "Document the 'why' behind each guardrail or the team treats them as noise.",
+      "Review your hooks and MCP servers like production code — they run automatically with real privileges."
+    ],
+    "quiz": {
+      "q": "In a mature setup, which work belongs in HOOKS rather than instructions or skills?",
+      "options": [
+        "Choosing a good variable name",
+        "Deciding how to structure a PR description",
+        "Guaranteeing a prod-destructive command can never run and every session is audit-logged",
+        "Explaining the codebase to a newcomer"
+      ],
+      "answer": 2,
+      "explain": "Hooks are for deterministic, must-always-happen / must-never-happen rules: blocking dangerous commands and audit logging. Judgment and formatting belong to instructions, skills, and subagents."
+    }
+  }
+]

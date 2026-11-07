@@ -1,0 +1,29 @@
+{
+  "name": "ai-features-lab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Hands-on Claude Code academy — React + Vite edition.",
+  "scripts": {
+    "dev": "concurrently -k -n sync,vite -c green,cyan \"npm:sync:watch\" \"vite\"",
+    "build": "vite build",
+    "prebuild": "npm run sync:content",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "sync:content": "node scripts/sync-content.mjs",
+    "sync:watch": "node scripts/sync-content.mjs --watch"
+  },
+  "dependencies": {
+    "agentsensei": "^0.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}
