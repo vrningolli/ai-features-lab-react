@@ -808,3 +808,16 @@ h2 > svg.lucide, h3 > svg.lucide { color: var(--accent); margin-right: 6px; }
 .wm-badge svg { color: var(--muted); }
 .wm-badge.earned svg { color: var(--accent); }
 .bt-icon { display: grid; place-items: center; color: var(--accent); }
+
+/* Phones: header tabs as an app-style tab bar (icon over label), rank chip hidden.
+   Placed last so it wins over the inline-flex icon rule above. */
+@media (max-width: 720px) {
+  .topbar-right .rank-chip { display: none; }
+  .topbar-right { width: 100%; }
+  .topbar-right .view-tabs { flex: 1; min-width: 0; padding: 3px; gap: 2px; }
+  .topbar-right .view-tab {
+    flex: 1 1 0; min-width: 0; flex-direction: column; gap: 2px;
+    padding: 6px 2px 5px; font-size: 11.5px; line-height: 1.1; white-space: nowrap;
+  }
+  .topbar-right .view-tab svg { width: 17px; height: 17px; }
+}
