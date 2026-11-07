@@ -790,3 +790,21 @@ pre code { font-family: var(--mono); font-size: 12.8px; color: #d6dee8; line-hei
 }
 /* Keep the lab header on one line: the long subtitle only shows on wide screens */
 @media (max-width: 1280px) { .topbar .sub { display: none; } }
+
+/* ============ Icons (Lucide) ============ */
+svg.lucide { flex-shrink: 0; vertical-align: -0.16em; }
+h2 > svg.lucide, h3 > svg.lucide { color: var(--accent); margin-right: 6px; }
+.eyebrow, .pill, .studio-tab, .quiz-ace, .wm-xp-meta span, .wm-hud-lit, .wm-tt-title, .nav-toggle > span:first-child, .rank-chip { display: inline-flex; align-items: center; gap: 5px; }
+.pill-xp svg, .rank-chip svg, .wm-xp-meta svg { color: #d97706; fill: #fbbf24; }
+.wm-hud-lit svg { color: #ea580c; }
+.nav-item .ico { display: grid; place-items: center; color: var(--accent); }
+.nav-item.locked .ico { color: var(--muted); }
+.studio-tab svg { color: var(--accent); }
+/* journey map: lucide icons drawn inside the lantern / traveler bubble */
+.wm-node svg.wm-node-icon { color: #ffffff; pointer-events: none; }
+.wm-node.locked svg.wm-node-icon { color: #e5e7eb; }
+.wm-traveler-icon { color: var(--accent); }
+.wm-badge { display: inline-grid; place-items: center; }
+.wm-badge svg { color: var(--muted); }
+.wm-badge.earned svg { color: var(--accent); }
+.bt-icon { display: grid; place-items: center; color: var(--accent); }

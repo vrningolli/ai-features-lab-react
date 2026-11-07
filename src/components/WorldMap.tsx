@@ -1,3 +1,5 @@
+import { Flame, Footprints, Lock, Star } from "lucide-react";
+import { BadgeIcon, LessonIcon } from "./Icons";
 import { useMemo, useRef, useState } from "react";
 import { CURRICULUM, type Module } from "../data/curriculum";
 import {
@@ -284,9 +286,11 @@ export function WorldMap({
                 <rect className="wm-lamp-post" x={-2.5} y={-4} width={5} height={16} rx={2} />
                 <rect className="wm-lamp" x={-13} y={-30} width={26} height={26} rx={6} />
                 <path className="wm-lamp-roof" d="M -17 -30 L 0 -40 L 17 -30 Z" />
-                <text className="wm-node-icon" y={-11.5} textAnchor="middle">
-                  {locked ? "🔒" : m.icon}
-                </text>
+                {locked ? (
+                  <Lock className="wm-node-icon" x={-7} y={-24} width={14} height={14} strokeWidth={2.4} />
+                ) : (
+                  <LessonIcon id={m.id} className="wm-node-icon" x={-8} y={-25} width={16} height={16} strokeWidth={2.2} />
+                )}
                 <text className="wm-node-label" y={28} textAnchor="middle">
                   {p.label}
                 </text>
@@ -302,9 +306,7 @@ export function WorldMap({
         >
           <g className="wm-traveler-bob">
             <circle className="wm-traveler-bg" r={15} />
-            <text textAnchor="middle" y={5.5} fontSize={17}>
-              🦊
-            </text>
+            <Footprints className="wm-traveler-icon" x={-9} y={-9} width={18} height={18} strokeWidth={2.2} />
           </g>
         </g>
       </svg>
@@ -324,7 +326,7 @@ export function WorldMap({
           <div className="wm-xp-bar" style={{ width: rank.pct + "%" }} />
         </div>
         <div className="wm-xp-meta">
-          <span>⭐ {xp} XP</span>
+          <span><Star size={13} /> {xp} XP</span>
           <span>
             {rank.nextTitle ? `${rank.toNext} XP → ${rank.nextTitle}` : "highest rank"}
           </span>
@@ -332,7 +334,7 @@ export function WorldMap({
 
         <div className="wm-hud-progress">
           <span className="wm-hud-lit">
-            🏮 {doneCount} / {CURRICULUM.length}
+            <Flame size={14} /> {doneCount} / {CURRICULUM.length}
           </span>{" "}
           shrines lit
         </div>
@@ -346,7 +348,7 @@ export function WorldMap({
                 className={"wm-badge" + (has ? " earned" : "")}
                 title={has ? `${b.name} — ${b.hint}` : `Locked — ${b.hint}`}
               >
-                {b.icon}
+                <BadgeIcon id={b.id} size={16} />
               </span>
             );
           })}
@@ -361,7 +363,7 @@ export function WorldMap({
           Free roam <small>(ignore locks)</small>
         </label>
 
-        <p className="wm-hud-hint">Click a shrine — the fox will lead the way.</p>
+        <p className="wm-hud-hint">Click a shrine — the traveler will lead the way.</p>
       </div>
 
       {/* Hover tooltip */}
@@ -374,12 +376,12 @@ export function WorldMap({
           }}
         >
           <div className="wm-tt-title">
-            {isOpen(hover.id) ? hover.icon : "🔒"} {hover.title}
+            {isOpen(hover.id) ? <LessonIcon id={hover.id} size={15} /> : <Lock size={14} />} {hover.title}
           </div>
           <div className="wm-tt-tag">{hover.tagline}</div>
           {isOpen(hover.id) ? (
             <div className="wm-tt-meta">
-              ⏱ {hover.mins} min · +{xpFor(hover)} XP ·{" "}
+              {hover.mins} min · +{xpFor(hover)} XP ·{" "}
               {progress[hover.id] ? "✓ lantern lit" : "not yet visited"}
             </div>
           ) : (

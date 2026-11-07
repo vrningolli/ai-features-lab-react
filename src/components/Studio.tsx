@@ -1,3 +1,9 @@
+import { Wrench } from "lucide-react";
+import { ARTIFACT_ICONS } from "./Icons";
+function StudioIcon({ id }: { id: string }) {
+  const Icon = ARTIFACT_ICONS[id];
+  return Icon ? <Icon size={15} /> : null;
+}
 import { useMemo, useState } from "react";
 
 /**
@@ -307,7 +313,7 @@ export function Studio() {
   return (
     <main className="content studio">
       <div className="lesson-head">
-        <span className="eyebrow">🛠️ · Template Studio</span>
+        <span className="eyebrow"><Wrench size={14} /> Template Studio</span>
         <h2>Template Studio</h2>
         <p className="tagline">
           Fill the form, get a ready-to-use file. Copy it or download it straight into your{" "}
@@ -322,7 +328,7 @@ export function Studio() {
             className={"studio-tab" + (a.id === activeId ? " active" : "")}
             onClick={() => setActiveId(a.id)}
           >
-            <span>{a.icon}</span> {a.label}
+            <StudioIcon id={a.id} /> {a.label}
           </button>
         ))}
       </div>

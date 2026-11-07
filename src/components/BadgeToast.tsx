@@ -1,3 +1,4 @@
+import { BadgeIcon } from "./Icons";
 import { useEffect } from "react";
 import type { Badge } from "../data/gamification";
 
@@ -10,7 +11,9 @@ function Toast({ badge, onDismiss }: { badge: Badge; onDismiss: () => void }) {
 
   return (
     <div className="badge-toast" role="status">
-      <span className="bt-icon">{badge.icon}</span>
+      <span className="bt-icon">
+        <BadgeIcon id={badge.id} size={22} />
+      </span>
       <div className="bt-text">
         <div className="bt-kicker">Badge unlocked</div>
         <div className="bt-name">{badge.name}</div>

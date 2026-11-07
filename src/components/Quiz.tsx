@@ -1,3 +1,4 @@
+import { Target } from "lucide-react";
 import { useState } from "react";
 import type { Quiz as QuizType } from "../data/curriculum";
 
@@ -32,7 +33,7 @@ export function Quiz({ quiz, onAce }: Props) {
         );
       })}
       <div className={"explain" + (answered ? " show" : "")}>
-        {aced && <b className="quiz-ace">🎯 First try! </b>}
+        {aced && <b className="quiz-ace"><Target size={14} /> First try! </b>}
         {quiz.explain}
       </div>
     </div>

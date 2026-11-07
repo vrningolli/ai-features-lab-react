@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CURRICULUM } from "./data/curriculum";
 import { useProgress } from "./useProgress";
@@ -184,7 +185,7 @@ export default function App() {
           </div>
 
           <span className="rank-chip" title={`${xp} XP · ${rank.title}`}>
-            <b>Lv.{rank.level}</b> {rank.title} · ⭐ {xp}
+            <b>Lv.{rank.level}</b> {rank.title} · <Star size={12} /> {xp}
           </span>
 
           {view === "lessons" && (
@@ -193,7 +194,7 @@ export default function App() {
                 <div className="progress-bar" style={{ width: pct + "%" }} />
               </div>
               <span className="progress-label">
-                {allDone ? "🎉 100%" : pct + "%"}
+                {allDone ? "100%" : pct + "%"}
               </span>
             </div>
           )}
@@ -258,7 +259,7 @@ export default function App() {
       <footer className="footer">
         <span>
           {view === "world" ? (
-            <>🏮 Light every shrine to reach the summit · progress saves in this browser</>
+            <>Light every shrine to reach the summit · progress saves in this browser</>
           ) : view === "lessons" ? (
             <>
               {doneCount}/{CURRICULUM.length} lessons complete · ←/→ to navigate · <kbd>/</kbd> to search

@@ -1,3 +1,5 @@
+import { Bot, Clock, FlaskConical, Lock, Map as MapIcon, Star } from "lucide-react";
+import { LessonIcon } from "./Icons";
 import { useEffect, useRef } from "react";
 import type { Module } from "../data/curriculum";
 import { xpFor } from "../data/gamification";
@@ -61,20 +63,20 @@ export function Lesson({
     <main className="content" ref={topRef}>
       <div className="lesson-head">
         <span className="eyebrow">
-          {m.icon} · {m.group}
+          <LessonIcon id={m.id} size={14} /> {m.group}
         </span>
         <h2>{m.title}</h2>
         <p className="tagline">{m.tagline}</p>
         <div className="pill-row">
           <span className="pill level">{m.level}</span>
-          <span className="pill">⏱ {m.mins} min</span>
+          <span className="pill"><Clock size={13} /> {m.mins} min</span>
           <span className="pill">
             Lesson {index + 1} of {total}
           </span>
-          <span className="pill pill-xp">⭐ +{xpFor(m)} XP</span>
+          <span className="pill pill-xp"><Star size={13} /> +{xpFor(m)} XP</span>
           {onMap && (
             <button className="pill pill-map" onClick={onMap} title="Back to the journey map">
-              🗺️ Map
+              <MapIcon size={13} /> Map
             </button>
           )}
         </div>
@@ -131,7 +133,7 @@ export function Lesson({
 
       <div className="section">
         <div className="lab">
-          <h3>🧪 Hands-on lab — {m.lab.goal}</h3>
+          <h3><FlaskConical size={18} /> Hands-on lab — {m.lab.goal}</h3>
           <ol>
             {m.lab.steps.map((s, i) => (
               <li key={i} dangerouslySetInnerHTML={{ __html: s }} />
@@ -139,7 +141,7 @@ export function Lesson({
           </ol>
           {onRunLab && (
             <button className="btn agent-run-btn" onClick={onRunLab}>
-              🤖 Run this lab with the AI agent
+              <Bot size={16} /> Run this lab with the AI agent
             </button>
           )}
         </div>
@@ -177,7 +179,7 @@ export function Lesson({
           title={nextLocked ? "Mark this lesson complete to unlock the next shrine" : undefined}
           style={index === total - 1 || nextLocked ? { opacity: 0.4 } : undefined}
         >
-          {nextLocked ? "🔒 Next" : "Next →"}
+          {nextLocked ? (<><Lock size={14} /> Next</>) : "Next →"}
         </button>
       </div>
     </main>

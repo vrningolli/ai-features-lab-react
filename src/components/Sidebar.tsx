@@ -1,3 +1,5 @@
+import { Lock } from "lucide-react";
+import { LessonIcon } from "./Icons";
 import { useMemo, useState } from "react";
 import { CURRICULUM, groupedModules, type Module } from "../data/curriculum";
 
@@ -47,7 +49,7 @@ export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
         disabled={locked}
         title={locked ? "Complete the previous lesson to unlock this one" : undefined}
       >
-        <span className="ico">{locked ? "🔒" : m.icon}</span>
+        <span className="ico">{locked ? <Lock size={15} /> : <LessonIcon id={m.id} size={17} />}</span>
         <span className="meta">
           <span>{m.title}</span>
           <small>
@@ -63,7 +65,13 @@ export function Sidebar({ activeId, progress, onSelect, canOpen }: Props) {
     <nav className={"sidebar" + (open ? " open" : "")} aria-label="Lessons">
       <button className="nav-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>
-          {active ? `${active.icon} ${active.title}` : "Lessons"}
+          {active ? (
+            <>
+              <LessonIcon id={active.id} size={15} /> {active.title}
+            </>
+          ) : (
+            "Lessons"
+          )}
         </span>
         <span className="nav-toggle-hint">All lessons {open ? "▴" : "▾"}</span>
       </button>
