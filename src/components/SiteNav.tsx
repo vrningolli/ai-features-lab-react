@@ -2,11 +2,15 @@
  * Prep Hub's site-wide navigation, shown when the lab is served at /ai-lab/.
  * Mirrors SiteNav in interview-prep-site-react (separate app, so it's a copy).
  */
+import { GraduationCap } from "lucide-react";
+
 export function SiteNav() {
   return (
     <header className="site-nav">
       <a className="site-brand" href="../" aria-label="Prep Hub home">
-        <span className="site-logo">P</span>
+        <span className="site-logo">
+          <GraduationCap size={18} strokeWidth={2.2} />
+        </span>
         <span className="site-name">Prep Hub</span>
       </a>
       <nav className="site-links" aria-label="Site">

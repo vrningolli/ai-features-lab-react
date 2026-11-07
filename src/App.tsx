@@ -8,6 +8,7 @@ import { WorldMap } from "./components/WorldMap";
 import { BadgeToasts } from "./components/BadgeToast";
 import { AgentPanel } from "./components/AgentPanel";
 import { SiteNav } from "./components/SiteNav";
+import { BookOpen, Bot, Map as MapIcon, Sparkles, Wrench } from "lucide-react";
 import { labPrompt } from "./lib/prompts";
 import { unlockedIds } from "./data/gamification";
 
@@ -143,7 +144,9 @@ export default function App() {
       {EMBEDDED_IN_COACH && <SiteNav />}
       <header className="topbar">
         <div className="brand">
-          <span className="logo">◆</span>
+          <span className="logo">
+            <Sparkles size={20} />
+          </span>
           <div>
             <h1>AI Features Lab</h1>
             <p className="sub">
@@ -158,25 +161,25 @@ export default function App() {
               className={"view-tab" + (view === "world" ? " active" : "")}
               onClick={() => setView("world")}
             >
-              🗺️ Journey
+              <MapIcon size={15} /> Journey
             </button>
             <button
               className={"view-tab" + (view === "lessons" ? " active" : "")}
               onClick={() => setView("lessons")}
             >
-              📚 Lessons
+              <BookOpen size={15} /> Lessons
             </button>
             <button
               className={"view-tab" + (view === "studio" ? " active" : "")}
               onClick={() => setView("studio")}
             >
-              🛠️ Studio
+              <Wrench size={15} /> Studio
             </button>
             <button
               className={"view-tab" + (view === "agent" ? " active" : "")}
               onClick={() => setView("agent")}
             >
-              🤖 Agent
+              <Bot size={15} /> Agent
             </button>
           </div>
 

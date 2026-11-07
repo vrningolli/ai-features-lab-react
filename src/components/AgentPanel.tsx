@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useOpenClaw, type Provider } from "../useOpenClaw";
 import { SYSTEM_PROMPT } from "../lib/prompts";
 import { CLAUDE_MODELS } from "../lib/claude-models";
+import { Markdown } from "./Markdown";
+import type { LucideIcon } from "lucide-react";
+import { Bot, KeyRound, Play, Settings2, Square, Terminal, Zap } from "lucide-react";
 
 interface Props {
   /** Prompt handed over from a lesson's "run this lab" button. */
@@ -12,10 +15,10 @@ interface Props {
   onConsumePrompt?: () => void;
 }
 
-const PROVIDERS: { id: Provider; label: string; blurb: string }[] = [
-  { id: "free", label: "⚡ Free model", blurb: "Hosted open model — no setup, limited runs per minute." },
-  { id: "claude", label: "✳️ Your Claude key", blurb: "Real Claude with your own Anthropic API key, billed to you." },
-  { id: "openclaw", label: "🦞 OpenClaw", blurb: "Your self-hosted agent on this computer (127.0.0.1)." },
+const PROVIDERS: { id: Provider; label: string; Icon: LucideIcon; blurb: string }[] = [
+  { id: "free", label: "Free model", Icon: Zap, blurb: "Hosted open model — no setup, limited runs per minute." },
+  { id: "claude", label: "Your Claude key", Icon: KeyRound, blurb: "Real Claude with your own Anthropic API key, billed to you." },
+  { id: "openclaw", label: "OpenClaw", Icon: Terminal, blurb: "Your self-hosted agent on this computer (127.0.0.1)." },
 ];
 
 export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props) {
@@ -23,7 +26,7 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
     useOpenClaw();
   const [prompt, setPrompt] = useState(initialPrompt || "");
   const [showSetup, setShowSetup] = useState(true);
-  const outRef = useRef<HTMLPreElement>(null);
+  const outRef = useRef<HTMLDivElement>(null);
 
   // Adopt a lab handed over from a lesson.
   useEffect(() => {
@@ -53,7 +56,9 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
   return (
     <main className="content agent-panel">
       <div className="lesson-head">
-        <span className="eyebrow">🤖 · AI agent</span>
+        <span className="eyebrow">
+          <Bot size={14} /> AI agent
+        </span>
         <h2>Agent Runner</h2>
         <p className="tagline">Run any lab for real — on a free model, on Claude with your own key, or on OpenClaw.</p>
         <div className="pill-row">
@@ -70,7 +75,7 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
             <span className="pill">{connection.models.length} models</span>
           )}
           <button className="pill pill-map" onClick={() => setShowSetup((s) => !s)}>
-            ⚙️ {showSetup ? "Hide setup" : "Setup"}
+            <Settings2 size={13} /> {showSetup ? "Hide setup" : "Setup"}
           </button>
         </div>
       </div>
@@ -87,7 +92,7 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
                   className={"view-tab" + (prefs.provider === p.id ? " active" : "")}
                   onClick={() => setPrefs({ ...prefs, provider: p.id })}
                 >
-                  {p.label}
+                  <p.Icon size={15} /> {p.label}
                 </button>
               ))}
             </div>
@@ -250,11 +255,17 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
         />
         <div className="agent-actions">
           <button className="btn" onClick={submit} disabled={running || !prompt.trim()}>
-            {running ? "Running…" : `▶ Run with ${provider.label.replace(/^\S+\s/, "")}`}
+            {running ? (
+              "Running…"
+            ) : (
+              <>
+                <Play size={15} /> Run with {provider.label}
+              </>
+            )}
           </button>
           {running && (
             <button className="btn secondary" onClick={cancel}>
-              Stop
+              <Square size={13} /> Stop
             </button>
           )}
           <small className="muted">⌘/Ctrl + Enter</small>
@@ -268,10 +279,10 @@ export function AgentPanel({ initialPrompt, fromLesson, onConsumePrompt }: Props
             Agent output
           </h3>
           {runError && <div className="callout warn">{runError}</div>}
-          <pre className="agent-output" ref={outRef}>
-            {output}
+          <div className="agent-output" ref={outRef}>
+            {output ? <Markdown text={output} /> : running && <p className="muted">Thinking…</p>}
             {running && <span className="agent-caret">▍</span>}
-          </pre>
+          </div>
         </div>
       )}
 
